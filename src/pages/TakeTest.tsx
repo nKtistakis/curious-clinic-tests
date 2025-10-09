@@ -11,269 +11,288 @@ import {
 } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, ArrowRight, CheckCircle2, PlayCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface Question {
-  id: string;
-  question: string;
-  options: string[];
-  correctOption: number;
+  _id: string;
+  description: string;
+  category: {
+    code: string;
+    name: string;
+  };
+  points: number;
+  options?: string[];
+  correctOption?: number;
+  pairs?: { id: string; word1: string; word2: string }[];
+  audioFile?: { name: string; data: string };
+  imageFile?: { name: string; data: string };
+  attachedFiles?: { name: string; data: string; type: string }[];
 }
 
 interface Test {
-  id: string;
-  title: string;
-  description: string;
-  category?: string;
+  _id: string;
+  name: string;
   questions: Question[];
+  status?: string;
 }
 
 const TakeTest = () => {
   const { testId } = useParams();
   const navigate = useNavigate();
   const [test, setTest] = useState<Test | null>(null);
-  const [answers, setAnswers] = useState<{ [key: string]: number }>({});
-  const [submitted, setSubmitted] = useState(false);
-  const [score, setScore] = useState(0);
-  const [hasSavedProgress, setHasSavedProgress] = useState(false);
-  const [showContinuePrompt, setShowContinuePrompt] = useState(false);
+  const [answers, setAnswers] = useState<{ [key: string]: string }>({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [testAssignmentId, setTestAssignmentId] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [stopwatchStart] = useState(Date.now());
 
   useEffect(() => {
-    const loadTest = async () => {
-      try {
-        const foundTests = await apiClient.getTests(testId);
-        if (foundTests && foundTests.length > 0) {
-          setTest(foundTests[0]);
+    loadTest();
+  }, [testId]);
 
-          // Check for saved progress from API
+  const loadTest = async () => {
+    try {
+      const foundTests = await apiClient.getTests(testId);
+      if (foundTests && foundTests.length > 0) {
+        const testData = foundTests[0];
+        setTest(testData);
+        
+        // Get test assignment ID (in real implementation, this would come from API)
+        // For now, using testId as placeholder
+        setTestAssignmentId(testId || "");
+
+        // Check if test is in-progress and load saved answers
+        if (testData.status === "INPROGRESS") {
           try {
             const progressData = await apiClient.getTestProgress(testId!);
             if (progressData && progressData.answers) {
-              setHasSavedProgress(true);
-              setShowContinuePrompt(true);
+              setAnswers(progressData.answers);
+              toast.success("Continuing from saved progress");
             }
           } catch (error) {
             console.error("Failed to fetch test progress:", error);
           }
-        } else {
-          toast.error("Test not found");
-          navigate("/dashboard");
         }
-      } catch (error) {
-        console.error("Failed to fetch test:", error);
-        toast.error("Failed to load test");
+      } else {
+        toast.error("Test not found");
         navigate("/dashboard");
       }
-    };
+    } catch (error) {
+      console.error("Failed to fetch test:", error);
+      toast.error("Failed to load test");
+      navigate("/dashboard");
+    }
+  };
 
-    loadTest();
-  }, [testId, navigate]);
-
-  // Save individual answer to backend when it changes
-  const handleAnswerChange = async (
-    questionId: string,
-    answerIndex: number
-  ) => {
-    const newAnswers = { ...answers, [questionId]: answerIndex };
+  const handleAnswerChange = async (questionId: string, answer: string) => {
+    const newAnswers = { ...answers, [questionId]: answer };
     setAnswers(newAnswers);
 
-    if (testId && !submitted) {
+    // Submit answer to API immediately
+    if (testAssignmentId && !isSubmitting) {
       try {
-        await apiClient.postTestProgress(testId, {
+        await apiClient.submitAnswer({
+          testAssignmentId,
           questionId,
-          answer: answerIndex,
+          answer,
         });
       } catch (error) {
-        console.error("Failed to save answer to server:", error);
+        console.error("Failed to save answer:", error);
         toast.error("Failed to save answer");
       }
     }
   };
 
-  const handleContinue = async () => {
-    try {
-      const progressData = await apiClient.getTestProgress(testId!);
-      if (progressData && progressData.answers) {
-        setAnswers(progressData.answers);
-        const answeredCount = Object.keys(progressData.answers).length;
-        setCurrentQuestionIndex(answeredCount);
-        toast.success("Continuing from where you left off");
-      }
-    } catch (error) {
-      console.error("Failed to load progress:", error);
-      toast.error("Failed to load progress");
+  const handleNext = () => {
+    if (!test) return;
+    const currentQuestion = test.questions[currentQuestionIndex];
+    
+    if (!answers[currentQuestion._id]) {
+      toast.error("Please provide an answer before proceeding");
+      return;
     }
-    setShowContinuePrompt(false);
+    
+    if (currentQuestionIndex < test.questions.length - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+    }
   };
 
-  const handleStartFresh = () => {
-    setAnswers({});
-    setCurrentQuestionIndex(0);
-    setShowContinuePrompt(false);
-    toast.success("Starting fresh");
+  const handlePrevious = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(currentQuestionIndex - 1);
+    }
   };
 
   const handleSubmit = async () => {
-    if (Object.keys(answers).length !== test?.questions.length) {
+    if (!test) return;
+
+    const unansweredQuestions = test.questions.filter(
+      (q) => !answers[q._id]
+    );
+
+    if (unansweredQuestions.length > 0) {
       toast.error("Please answer all questions before submitting");
       return;
     }
 
-    let correctCount = 0;
-    test?.questions.forEach((question) => {
-      if (answers[question.id] === question.correctOption) {
-        correctCount++;
-      }
-    });
-
-    const percentage = Math.round((correctCount / test.questions.length) * 100);
-
-    // Collect question category IDs if available
-    const questionCategories = test?.questions
-      .map((q: any) => q.categoryId)
-      .filter(Boolean);
-
-    const testResult = {
-      score: correctCount,
-      totalQuestions: test.questions.length,
-      percentage,
-      answers,
-      questionCategories,
-    };
-
-    setScore(correctCount);
-    setSubmitted(true);
-
-    // Submit to backend
+    setIsSubmitting(true);
     try {
-      await apiClient.postTestResult(testId!, testResult);
-      toast.success("Test submitted successfully!");
+      const timeTaken = Math.floor((Date.now() - stopwatchStart) / 1000);
+      
+      // For now, navigate to review page
+      // In real implementation, check if manual scoring is needed
+      const needsManualScoring = test.questions.some(
+        (q) => q.category.code !== "MULTIPLE-CHOICE"
+      );
+
+      if (needsManualScoring) {
+        toast.success("Test completed! Waiting for doctor review.");
+        navigate("/dashboard");
+      } else {
+        // Auto-score and finish
+        const answersArray = test.questions.map((q) => ({
+          questionId: q._id,
+          answer: answers[q._id],
+        }));
+
+        let totalScore = 0;
+        let totalPoints = 0;
+
+        test.questions.forEach((q) => {
+          totalPoints += q.points;
+          if (q.category.code === "MULTIPLE-CHOICE" && q.correctOption !== undefined) {
+            const answerIndex = parseInt(answers[q._id]);
+            if (answerIndex === q.correctOption) {
+              totalScore += q.points;
+            }
+          }
+        });
+
+        const percentage = totalPoints > 0 ? Math.round((totalScore / totalPoints) * 100) : 0;
+
+        await apiClient.finishTest(testAssignmentId, {
+          score: totalScore,
+          totalQuestions: test.questions.length,
+          percentage,
+          answers: answersArray,
+        });
+
+        toast.success("Test completed and scored!");
+        navigate("/dashboard");
+      }
     } catch (error) {
-      console.error("Failed to submit test result to server:", error);
-      toast.warning("Test completed but failed to save to server");
+      console.error("Failed to submit test:", error);
+      toast.error("Failed to submit test");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const renderQuestionInput = (question: Question) => {
+    switch (question.category.code) {
+      case "MULTIPLE-CHOICE":
+        return (
+          <RadioGroup
+            value={answers[question._id] || ""}
+            onValueChange={(value) => handleAnswerChange(question._id, value)}
+          >
+            <div className="space-y-3">
+              {question.options?.map((option, optIndex) => (
+                <div
+                  key={optIndex}
+                  className="flex items-center space-x-3 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                >
+                  <RadioGroupItem
+                    value={optIndex.toString()}
+                    id={`q${question._id}-opt${optIndex}`}
+                  />
+                  <Label
+                    htmlFor={`q${question._id}-opt${optIndex}`}
+                    className="flex-1 cursor-pointer"
+                  >
+                    {option}
+                  </Label>
+                </div>
+              ))}
+            </div>
+          </RadioGroup>
+        );
+
+      case "ESSAY":
+      case "IMAGE-DESCRIPTION":
+      case "AUDIO-MEMORY":
+        return (
+          <div className="space-y-3">
+            {question.imageFile && (
+              <div className="mb-4">
+                <img
+                  src={question.imageFile.data}
+                  alt="Question image"
+                  className="max-w-full h-auto rounded-lg border"
+                />
+              </div>
+            )}
+            {question.audioFile && (
+              <div className="mb-4">
+                <audio controls className="w-full">
+                  <source src={question.audioFile.data} />
+                  Your browser does not support the audio element.
+                </audio>
+              </div>
+            )}
+            <Textarea
+              placeholder="Type your answer here..."
+              value={answers[question._id] || ""}
+              onChange={(e) => handleAnswerChange(question._id, e.target.value)}
+              rows={6}
+            />
+          </div>
+        );
+
+      case "MEMORY-PAIRS":
+        return (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground mb-4">
+              Match the pairs by entering the correct pairs (one per line, separated by " - ")
+            </p>
+            <Textarea
+              placeholder="Example:\nWord1 - Word2\nWord3 - Word4"
+              value={answers[question._id] || ""}
+              onChange={(e) => handleAnswerChange(question._id, e.target.value)}
+              rows={6}
+            />
+            <div className="mt-4 p-4 bg-muted rounded-lg">
+              <p className="text-sm font-medium mb-2">Words to match:</p>
+              <div className="grid grid-cols-2 gap-2">
+                {question.pairs?.flatMap((p) => [p.word1, p.word2]).map((word, i) => (
+                  <div key={i} className="p-2 bg-background rounded border">
+                    {word}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+
+      default:
+        return (
+          <Input
+            placeholder="Type your answer here..."
+            value={answers[question._id] || ""}
+            onChange={(e) => handleAnswerChange(question._id, e.target.value)}
+          />
+        );
     }
   };
 
   if (!test) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p>Loading...</p>
-      </div>
-    );
-  }
-
-  if (showContinuePrompt && hasSavedProgress) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full shadow-xl">
-          <CardHeader className="text-center space-y-4">
-            <div className="flex justify-center">
-              <div className="p-4 bg-primary/10 rounded-full">
-                <PlayCircle className="h-12 w-12 text-primary" />
-              </div>
-            </div>
-            <CardTitle className="text-2xl">Continue Test?</CardTitle>
-            <CardDescription>
-              You have saved progress for this test. Would you like to continue
-              from where you left off?
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Button onClick={handleContinue} className="w-full gap-2">
-              <PlayCircle className="h-4 w-4" />
-              Continue from Question {Object.keys(answers).length + 1}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={handleStartFresh}
-              className="w-full"
-            >
-              Start Fresh
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => navigate("/dashboard")}
-              className="w-full"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (submitted) {
-    const percentage = Math.round((score / test.questions.length) * 100);
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 flex items-center justify-center p-4">
-        <Card className="max-w-2xl w-full shadow-xl">
-          <CardHeader className="text-center space-y-4">
-            <div className="flex justify-center">
-              <div className="p-4 bg-success/10 rounded-full">
-                <CheckCircle2 className="h-16 w-16 text-success" />
-              </div>
-            </div>
-            <CardTitle className="text-3xl">Test Complete!</CardTitle>
-            <CardDescription className="text-lg">
-              Here are your results
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="text-center">
-              <div className="text-5xl font-bold text-primary mb-2">
-                {percentage}%
-              </div>
-              <p className="text-muted-foreground">
-                {score} out of {test.questions.length} correct
-              </p>
-            </div>
-
-            <div className="space-y-4 pt-4">
-              {test.questions.map((question, index) => {
-                const isCorrect =
-                  answers[question.id] === question.correctOption;
-                return (
-                  <div
-                    key={question.id}
-                    className={`p-4 rounded-lg border-2 ${
-                      isCorrect
-                        ? "border-success bg-success/5"
-                        : "border-destructive bg-destructive/5"
-                    }`}
-                  >
-                    <div className="font-medium mb-2">Question {index + 1}</div>
-                    <div className="text-sm text-muted-foreground mb-2">
-                      {question.question}
-                    </div>
-                    <div className="text-sm">
-                      <span className="font-medium">Your answer: </span>
-                      {question.options[answers[question.id]]}
-                    </div>
-                    {!isCorrect && (
-                      <div className="text-sm mt-1 text-success">
-                        <span className="font-medium">Correct answer: </span>
-                        {question.options[question.correctOption]}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            <Button
-              onClick={() => navigate("/dashboard")}
-              className="w-full gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Dashboard
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -281,22 +300,6 @@ const TakeTest = () => {
   const currentQuestion = test.questions[currentQuestionIndex];
   const isLastQuestion = currentQuestionIndex === test.questions.length - 1;
   const isFirstQuestion = currentQuestionIndex === 0;
-
-  const handleNext = () => {
-    if (answers[currentQuestion.id] === undefined) {
-      toast.error("Please select an answer before proceeding");
-      return;
-    }
-    if (!isLastQuestion) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-    }
-  };
-
-  const handlePrevious = () => {
-    if (!isFirstQuestion) {
-      setCurrentQuestionIndex(currentQuestionIndex - 1);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5">
@@ -311,21 +314,7 @@ const TakeTest = () => {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold text-foreground">
-                  {test.title}
-                </h1>
-                {test.category && (
-                  <span className="px-2 py-1 bg-primary/10 text-primary rounded text-xs font-medium">
-                    {test.category}
-                  </span>
-                )}
-              </div>
-              {test.description && (
-                <p className="text-sm text-muted-foreground">
-                  {test.description}
-                </p>
-              )}
+              <h1 className="text-xl font-bold text-foreground">{test.name}</h1>
             </div>
           </div>
         </div>
@@ -342,7 +331,7 @@ const TakeTest = () => {
                 className="min-w-[60px]"
               >
                 Q{index + 1}
-                {answers[test.questions[index].id] !== undefined && (
+                {answers[test.questions[index]._id] && (
                   <span className="ml-1 text-xs">✓</span>
                 )}
               </TabsTrigger>
@@ -352,40 +341,44 @@ const TakeTest = () => {
           <TabsContent value={currentQuestionIndex.toString()} className="mt-6">
             <Card className="shadow-md">
               <CardHeader>
-                <CardTitle className="text-lg">
-                  Question {currentQuestionIndex + 1} of {test.questions.length}
-                </CardTitle>
-                <CardDescription className="text-base mt-2">
-                  {currentQuestion.question}
-                </CardDescription>
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <CardTitle className="text-lg">
+                      Question {currentQuestionIndex + 1} of {test.questions.length}
+                    </CardTitle>
+                    <CardDescription className="text-base mt-2">
+                      {currentQuestion.description}
+                    </CardDescription>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {currentQuestion.points} {currentQuestion.points === 1 ? "point" : "points"}
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="space-y-6">
-                <RadioGroup
-                  value={answers[currentQuestion.id]?.toString()}
-                  onValueChange={(value) =>
-                    handleAnswerChange(currentQuestion.id, parseInt(value))
-                  }
-                >
-                  <div className="space-y-3">
-                    {currentQuestion.options.map((option, optIndex) => (
-                      <div
-                        key={optIndex}
-                        className="flex items-center space-x-3 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
-                      >
-                        <RadioGroupItem
-                          value={optIndex.toString()}
-                          id={`q${currentQuestion.id}-opt${optIndex}`}
-                        />
-                        <Label
-                          htmlFor={`q${currentQuestion.id}-opt${optIndex}`}
-                          className="flex-1 cursor-pointer"
-                        >
-                          {option}
-                        </Label>
+                {currentQuestion.attachedFiles && currentQuestion.attachedFiles.length > 0 && (
+                  <div className="space-y-2">
+                    {currentQuestion.attachedFiles.map((file, idx) => (
+                      <div key={idx}>
+                        {file.type.startsWith("image/") && (
+                          <img
+                            src={file.data}
+                            alt={file.name}
+                            className="max-w-full h-auto rounded-lg border"
+                          />
+                        )}
+                        {file.type.startsWith("audio/") && (
+                          <audio controls className="w-full">
+                            <source src={file.data} type={file.type} />
+                            Your browser does not support the audio element.
+                          </audio>
+                        )}
                       </div>
                     ))}
                   </div>
-                </RadioGroup>
+                )}
+
+                {renderQuestionInput(currentQuestion)}
 
                 <div className="flex justify-between pt-4">
                   <Button
@@ -398,8 +391,12 @@ const TakeTest = () => {
                   </Button>
 
                   {isLastQuestion ? (
-                    <Button onClick={handleSubmit} className="gap-2">
-                      Submit Test
+                    <Button
+                      onClick={handleSubmit}
+                      disabled={isSubmitting}
+                      className="gap-2"
+                    >
+                      {isSubmitting ? "Submitting..." : "Submit Test"}
                       <CheckCircle2 className="h-4 w-4" />
                     </Button>
                   ) : (

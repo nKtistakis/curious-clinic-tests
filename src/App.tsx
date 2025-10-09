@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import CreateTest from "./pages/CreateTest";
 import TakeTest from "./pages/TakeTest";
+import ReviewTest from "./pages/ReviewTest";
 import Profile from "./pages/Profile";
 import Patients from "./pages/Patients";
 import Conditions from "./pages/Conditions";
@@ -78,6 +79,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Conditions />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/review-test/:testAssignmentId"
+              element={
+                <ProtectedRoute>
+                  <ReviewTest />
                 </ProtectedRoute>
               }
             />

@@ -346,6 +346,60 @@ class ApiClient {
       throw new ApiError("Failed to delete condition", response.status);
     }
   }
+
+  // Test assignment and submission
+  async assignTest(data: {
+    testId: string;
+    patientId: string;
+    validDays?: number;
+    timerType?: "timer" | "stopwatch" | null;
+    timerValue?: number;
+  }): Promise<any> {
+    const response = await this.fetchWithAuth(`${API_BASE_URL}/test/assign`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new ApiError("Failed to assign test", response.status);
+    }
+
+    return response.json();
+  }
+
+  async submitAnswer(data: {
+    testAssignmentId: string;
+    questionId: string;
+    answer: string;
+  }): Promise<void> {
+    const response = await this.fetchWithAuth(`${API_BASE_URL}/tests/submitAnswer`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new ApiError("Failed to submit answer", response.status);
+    }
+  }
+
+  async finishTest(testAssignmentId: string, data: {
+    score: number;
+    totalQuestions: number;
+    percentage: number;
+    answers: any[];
+    notes?: string;
+  }): Promise<any> {
+    const response = await this.fetchWithAuth(`${API_BASE_URL}/tests/finish`, {
+      method: "POST",
+      body: JSON.stringify({ testAssignmentId, ...data }),
+    });
+
+    if (!response.ok) {
+      throw new ApiError("Failed to finish test", response.status);
+    }
+
+    return response.json();
+  }
 }
 
 class ApiError extends Error {

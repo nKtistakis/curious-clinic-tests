@@ -23,7 +23,9 @@ import {
   CheckCircle2,
   PlayCircle,
   Activity,
+  UserPlus,
 } from "lucide-react";
+import { AssignTestDialog } from "@/components/AssignTestDialog";
 import { toast } from "sonner";
 import type { Test } from "@/types/models";
 
@@ -62,6 +64,8 @@ const Dashboard = () => {
   const [tests, setTests] = useState<LocalTest[]>([]);
   const [assignedTests, setAssignedTests] = useState<AssignedTest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [selectedTest, setSelectedTest] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     const fetchTests = async () => {
@@ -216,10 +220,10 @@ const Dashboard = () => {
                         Start:{" "}
                         {new Date(assignedTest.startDate).toLocaleDateString()}
                       </p>
-                      <p>
-                        End:{" "}
-                        {new Date(assignedTest.endDate).toLocaleDateString()}
-                      </p>
+                       <p>
+                         Until:{" "}
+                         {new Date(assignedTest.endDate).toLocaleDateString()}
+                       </p>
                       {assignedTest.results && (
                         <>
                           <p className="font-semibold text-foreground mt-2">
@@ -340,12 +344,15 @@ const Dashboard = () => {
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => navigate(`/create-test/${test._id}`)}
-                      title="Edit test"
+                      onClick={() => {
+                        setSelectedTest({ id: test._id, name: test.name });
+                        setAssignDialogOpen(true);
+                      }}
+                      title="Assign test"
                       className="flex-1"
                     >
                       Assign
-                      <Users className="h-4 w-4" />
+                      <UserPlus className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="outline"
@@ -360,6 +367,15 @@ const Dashboard = () => {
               </Card>
             ))}
           </div>
+        )}
+
+        {selectedTest && (
+          <AssignTestDialog
+            open={assignDialogOpen}
+            onOpenChange={setAssignDialogOpen}
+            testId={selectedTest.id}
+            testName={selectedTest.name}
+          />
         )}
       </main>
     </div>
