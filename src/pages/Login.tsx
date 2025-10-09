@@ -51,7 +51,7 @@ const Login = () => {
           </div>
           <CardTitle className="text-3xl font-bold">Alzplat Portal</CardTitle>
           <CardDescription className="text-base">
-            Sign in to manage your tests and patients.
+            Login to manage your tests and patients.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -85,7 +85,7 @@ const Login = () => {
               className="w-full h-11 text-base font-medium"
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Signing In..." : "Sign In"}
+              {isSubmitting ? "Logging in..." : "Login"}
             </Button>
           </form>
         </CardContent>
