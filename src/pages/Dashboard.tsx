@@ -242,7 +242,7 @@ const Dashboard = () => {
                           variant="secondary"
                           className="mt-20 w-max px-[50px]"
                           onClick={() =>
-                            navigate(`/take-test/${assignedTests._id}`)
+                            navigate(`/take-test/${assignedTest.test._id}`)
                           }
                         >
                           Take Test

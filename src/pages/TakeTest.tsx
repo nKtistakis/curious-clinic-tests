@@ -44,9 +44,9 @@ const TakeTest = () => {
   useEffect(() => {
     const loadTest = async () => {
       try {
-        const foundTest = await apiClient.getTests(testId);
-        if (foundTest) {
-          setTest(foundTest);
+        const foundTests = await apiClient.getTests(testId);
+        if (foundTests && foundTests.length > 0) {
+          setTest(foundTests[0]);
 
           // Check for saved progress from API
           try {

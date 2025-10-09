@@ -84,7 +84,7 @@ class ApiClient {
     return response.json();
   }
 
-  async getTests(testId: string): Promise<any[]> {
+  async getTests(testId?: string): Promise<any[]> {
     const response = await this.fetchWithAuth(
       `${API_BASE_URL}/tests?${testId ? "_id=" + testId : ""}`
     );
