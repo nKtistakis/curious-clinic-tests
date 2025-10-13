@@ -44,6 +44,7 @@ const TakeTest = () => {
   const { testId } = useParams();
   const navigate = useNavigate();
   const [test, setTest] = useState<Test | null>(null);
+  const [assignedTest, setAssignetTest] = useState<any>(null);
   const [answers, setAnswers] = useState<{ [key: string]: string }>({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [testAssignmentId, setTestAssignmentId] = useState<string>("");
@@ -59,16 +60,18 @@ const TakeTest = () => {
       const testData = await apiClient.getAssignedTests(testId);
 
       if (testData) {
-        setTest(testData.test);
-        console.log(testData);
+        setAssignetTest(testData[0]);
+        setTest(testData[0].test);
 
         // Get test assignment ID from response
         setTestAssignmentId(testData._id);
 
-        // Check if test is in-progress and load saved answers
-        if (testData.status.code === "INPROGRESS") {
+        if (testData[0].status.code === "INPROGRESS") {
           // Load answers from results.answers
-          if (testData.results?.answers && testData.results.answers.length > 0) {
+          if (
+            testData.results?.answers &&
+            testData.results.answers.length > 0
+          ) {
             const answersMap: { [key: string]: string } = {};
             testData.results.answers.forEach((ans: any) => {
               answersMap[ans.questionId] = ans.answer;

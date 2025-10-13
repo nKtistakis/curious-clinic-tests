@@ -367,12 +367,12 @@ class ApiClient {
   }
 
   async submitAnswer(data: {
-    testAssignmentId: string;
-    questionId: string;
+    _id: string;
+    question: string;
     answer: string;
   }): Promise<void> {
     const response = await this.fetchWithAuth(
-      `${API_BASE_URL}/tests/submitAnswer`,
+      `${API_BASE_URL}/tests/submit-answer`,
       {
         method: "POST",
         body: JSON.stringify(data),
