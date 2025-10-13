@@ -87,19 +87,6 @@ const CreateTest = () => {
               attachedFiles: [],
             },
           ]);
-        } else if (categories.length > 1 && questions.length === 0) {
-          // Multiple categories available, create empty question
-          setQuestions([
-            {
-              _id: "1",
-              category: null,
-              description: "",
-              points: 1,
-              options: ["", ""],
-              correctOption: 0,
-              attachedFiles: [],
-            },
-          ]);
         }
       } catch (error) {
         toast.error("Failed to fetch question categories");
@@ -117,10 +104,9 @@ const CreateTest = () => {
     if (testId) {
       const loadTest = async () => {
         try {
-          const tests = await apiClient.getTests(testId);
+          const test = await apiClient.getTests(testId);
 
-          if (tests && tests.length > 0) {
-            const test = tests[0];
+          if (test) {
             setName(test.name);
             setQuestions(test.questions);
             setNotes(test.notes || "");

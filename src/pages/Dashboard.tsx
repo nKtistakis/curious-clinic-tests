@@ -65,7 +65,10 @@ const Dashboard = () => {
   const [assignedTests, setAssignedTests] = useState<AssignedTest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
-  const [selectedTest, setSelectedTest] = useState<{ id: string; name: string } | null>(null);
+  const [selectedTest, setSelectedTest] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   useEffect(() => {
     const fetchTests = async () => {
@@ -188,23 +191,23 @@ const Dashboard = () => {
                       </CardTitle>
                       <Badge
                         variant={
-                          assignedTest.test.statusCode === "COMPLETED"
+                          assignedTest.status?.code === "COMPLETED"
                             ? "default"
-                            : assignedTest.test.statusCode === "INPROGRESS"
+                            : assignedTest.status?.code === "INPROGRESS"
                             ? "secondary"
                             : "outline"
                         }
                       >
-                        {assignedTest.status.code === "COMPLETED" && (
+                        {assignedTest.status?.code === "COMPLETED" && (
                           <CheckCircle2 className="h-3 w-3 mr-1" />
                         )}
-                        {assignedTest.status.code === "INPROGRESS" && (
+                        {assignedTest.status?.code === "INPROGRESS" && (
                           <PlayCircle className="h-3 w-3 mr-1" />
                         )}
-                        {assignedTest.status.code === "PENDING" && (
+                        {assignedTest.status?.code === "PENDING" && (
                           <Clock className="h-3 w-3 mr-1" />
                         )}
-                        {assignedTest.status.name}
+                        {assignedTest.status?.name}
                       </Badge>
                     </div>
                     <CardDescription className="mt-2">
@@ -220,10 +223,10 @@ const Dashboard = () => {
                         Start:{" "}
                         {new Date(assignedTest.startDate).toLocaleDateString()}
                       </p>
-                       <p>
-                         Until:{" "}
-                         {new Date(assignedTest.endDate).toLocaleDateString()}
-                       </p>
+                      <p>
+                        Until:{" "}
+                        {new Date(assignedTest.endDate).toLocaleDateString()}
+                      </p>
                       {assignedTest.results && (
                         <>
                           <p className="font-semibold text-foreground mt-2">
@@ -241,12 +244,12 @@ const Dashboard = () => {
                           )}
                         </>
                       )}
-                      {assignedTest.status.code !== "COMPLETED" && (
+                      {assignedTest?.status?.code !== "COMPLETED" && (
                         <Button
                           variant="secondary"
                           className="mt-20 w-max px-[50px]"
                           onClick={() =>
-                            navigate(`/take-test/${assignedTest.test._id}`)
+                            navigate(`/take-test/${assignedTest._id}`)
                           }
                         >
                           Take Test

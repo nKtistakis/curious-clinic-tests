@@ -56,11 +56,12 @@ const TakeTest = () => {
 
   const loadTest = async () => {
     try {
-      const foundTests = await apiClient.getTests(testId);
-      if (foundTests && foundTests.length > 0) {
-        const testData = foundTests[0];
-        setTest(testData);
-        
+      const testData = await apiClient.getAssignedTests(testId);
+
+      if (testData) {
+        setTest(testData.test);
+        console.log(testData);
+
         // Get test assignment ID (in real implementation, this would come from API)
         // For now, using testId as placeholder
         setTestAssignmentId(testId || "");
@@ -110,12 +111,12 @@ const TakeTest = () => {
   const handleNext = () => {
     if (!test) return;
     const currentQuestion = test.questions[currentQuestionIndex];
-    
+
     if (!answers[currentQuestion._id]) {
       toast.error("Please provide an answer before proceeding");
       return;
     }
-    
+
     if (currentQuestionIndex < test.questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     }
@@ -130,9 +131,7 @@ const TakeTest = () => {
   const handleSubmit = async () => {
     if (!test) return;
 
-    const unansweredQuestions = test.questions.filter(
-      (q) => !answers[q._id]
-    );
+    const unansweredQuestions = test.questions.filter((q) => !answers[q._id]);
 
     if (unansweredQuestions.length > 0) {
       toast.error("Please answer all questions before submitting");
@@ -142,7 +141,7 @@ const TakeTest = () => {
     setIsSubmitting(true);
     try {
       const timeTaken = Math.floor((Date.now() - stopwatchStart) / 1000);
-      
+
       // For now, navigate to review page
       // In real implementation, check if manual scoring is needed
       const needsManualScoring = test.questions.some(
@@ -164,7 +163,10 @@ const TakeTest = () => {
 
         test.questions.forEach((q) => {
           totalPoints += q.points;
-          if (q.category.code === "MULTIPLE-CHOICE" && q.correctOption !== undefined) {
+          if (
+            q.category.code === "MULTIPLE-CHOICE" &&
+            q.correctOption !== undefined
+          ) {
             const answerIndex = parseInt(answers[q._id]);
             if (answerIndex === q.correctOption) {
               totalScore += q.points;
@@ -172,7 +174,8 @@ const TakeTest = () => {
           }
         });
 
-        const percentage = totalPoints > 0 ? Math.round((totalScore / totalPoints) * 100) : 0;
+        const percentage =
+          totalPoints > 0 ? Math.round((totalScore / totalPoints) * 100) : 0;
 
         await apiClient.finishTest(testAssignmentId, {
           score: totalScore,
@@ -257,7 +260,8 @@ const TakeTest = () => {
         return (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground mb-4">
-              Match the pairs by entering the correct pairs (one per line, separated by " - ")
+              Match the pairs by entering the correct pairs (one per line,
+              separated by " - ")
             </p>
             <Textarea
               placeholder="Example:\nWord1 - Word2\nWord3 - Word4"
@@ -268,11 +272,13 @@ const TakeTest = () => {
             <div className="mt-4 p-4 bg-muted rounded-lg">
               <p className="text-sm font-medium mb-2">Words to match:</p>
               <div className="grid grid-cols-2 gap-2">
-                {question.pairs?.flatMap((p) => [p.word1, p.word2]).map((word, i) => (
-                  <div key={i} className="p-2 bg-background rounded border">
-                    {word}
-                  </div>
-                ))}
+                {question.pairs
+                  ?.flatMap((p) => [p.word1, p.word2])
+                  .map((word, i) => (
+                    <div key={i} className="p-2 bg-background rounded border">
+                      {word}
+                    </div>
+                  ))}
               </div>
             </div>
           </div>
@@ -344,39 +350,42 @@ const TakeTest = () => {
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <CardTitle className="text-lg">
-                      Question {currentQuestionIndex + 1} of {test.questions.length}
+                      Question {currentQuestionIndex + 1} of{" "}
+                      {test.questions.length}
                     </CardTitle>
                     <CardDescription className="text-base mt-2">
                       {currentQuestion.description}
                     </CardDescription>
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    {currentQuestion.points} {currentQuestion.points === 1 ? "point" : "points"}
+                    {currentQuestion.points}{" "}
+                    {currentQuestion.points === 1 ? "point" : "points"}
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
-                {currentQuestion.attachedFiles && currentQuestion.attachedFiles.length > 0 && (
-                  <div className="space-y-2">
-                    {currentQuestion.attachedFiles.map((file, idx) => (
-                      <div key={idx}>
-                        {file.type.startsWith("image/") && (
-                          <img
-                            src={file.data}
-                            alt={file.name}
-                            className="max-w-full h-auto rounded-lg border"
-                          />
-                        )}
-                        {file.type.startsWith("audio/") && (
-                          <audio controls className="w-full">
-                            <source src={file.data} type={file.type} />
-                            Your browser does not support the audio element.
-                          </audio>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
+                {currentQuestion.attachedFiles &&
+                  currentQuestion.attachedFiles.length > 0 && (
+                    <div className="space-y-2">
+                      {currentQuestion.attachedFiles.map((file, idx) => (
+                        <div key={idx}>
+                          {file.type.startsWith("image/") && (
+                            <img
+                              src={file.data}
+                              alt={file.name}
+                              className="max-w-full h-auto rounded-lg border"
+                            />
+                          )}
+                          {file.type.startsWith("audio/") && (
+                            <audio controls className="w-full">
+                              <source src={file.data} type={file.type} />
+                              Your browser does not support the audio element.
+                            </audio>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                 {renderQuestionInput(currentQuestion)}
 

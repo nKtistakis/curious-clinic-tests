@@ -63,9 +63,6 @@ class ApiClient {
   }
 
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    console.log(credentials);
-    console.log(JSON.stringify(credentials));
-
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: "POST",
       credentials: "include",
@@ -139,8 +136,10 @@ class ApiClient {
     }
   }
 
-  async getAssignedTests(): Promise<any[]> {
-    const response = await this.fetchWithAuth(`${API_BASE_URL}/tests/assigned`);
+  async getAssignedTests(testId: string): Promise<any[]> {
+    const response = await this.fetchWithAuth(
+      `${API_BASE_URL}/tests/assigned?_id=${testId ?? ""}`
+    );
 
     if (!response.ok) {
       throw new ApiError("Failed to fetch tests", response.status);
@@ -355,7 +354,7 @@ class ApiClient {
     timerType?: "timer" | "stopwatch" | null;
     timerValue?: number;
   }): Promise<any> {
-    const response = await this.fetchWithAuth(`${API_BASE_URL}/test/assign`, {
+    const response = await this.fetchWithAuth(`${API_BASE_URL}/tests/assign`, {
       method: "POST",
       body: JSON.stringify(data),
     });
@@ -372,23 +371,29 @@ class ApiClient {
     questionId: string;
     answer: string;
   }): Promise<void> {
-    const response = await this.fetchWithAuth(`${API_BASE_URL}/tests/submitAnswer`, {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
+    const response = await this.fetchWithAuth(
+      `${API_BASE_URL}/tests/submitAnswer`,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      }
+    );
 
     if (!response.ok) {
       throw new ApiError("Failed to submit answer", response.status);
     }
   }
 
-  async finishTest(testAssignmentId: string, data: {
-    score: number;
-    totalQuestions: number;
-    percentage: number;
-    answers: any[];
-    notes?: string;
-  }): Promise<any> {
+  async finishTest(
+    testAssignmentId: string,
+    data: {
+      score: number;
+      totalQuestions: number;
+      percentage: number;
+      answers: any[];
+      notes?: string;
+    }
+  ): Promise<any> {
     const response = await this.fetchWithAuth(`${API_BASE_URL}/tests/finish`, {
       method: "POST",
       body: JSON.stringify({ testAssignmentId, ...data }),
