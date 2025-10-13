@@ -62,20 +62,19 @@ const TakeTest = () => {
         setTest(testData.test);
         console.log(testData);
 
-        // Get test assignment ID (in real implementation, this would come from API)
-        // For now, using testId as placeholder
-        setTestAssignmentId(testId || "");
+        // Get test assignment ID from response
+        setTestAssignmentId(testData._id);
 
         // Check if test is in-progress and load saved answers
-        if (testData.status === "INPROGRESS") {
-          try {
-            const progressData = await apiClient.getTestProgress(testId!);
-            if (progressData && progressData.answers) {
-              setAnswers(progressData.answers);
-              toast.success("Continuing from saved progress");
-            }
-          } catch (error) {
-            console.error("Failed to fetch test progress:", error);
+        if (testData.status.code === "INPROGRESS") {
+          // Load answers from results.answers
+          if (testData.results?.answers && testData.results.answers.length > 0) {
+            const answersMap: { [key: string]: string } = {};
+            testData.results.answers.forEach((ans: any) => {
+              answersMap[ans.questionId] = ans.answer;
+            });
+            setAnswers(answersMap);
+            toast.success("Continuing from saved progress");
           }
         }
       } else {

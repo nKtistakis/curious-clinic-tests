@@ -77,8 +77,8 @@ const Dashboard = () => {
         setTests(fetchedTests);
 
         // Fetch assigned tests
-        const assigned = (await apiClient.getAssignedTests()) as any;
-        setAssignedTests(assigned);
+        const assigned = await apiClient.getAssignedTests();
+        setAssignedTests(Array.isArray(assigned) ? assigned : [assigned]);
       } catch (error) {
         // Fallback to localStorage for now
         const storedTests = localStorage.getItem("tests");

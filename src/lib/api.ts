@@ -136,9 +136,9 @@ class ApiClient {
     }
   }
 
-  async getAssignedTests(testId: string): Promise<any[]> {
+  async getAssignedTests(testId?: string): Promise<any> {
     const response = await this.fetchWithAuth(
-      `${API_BASE_URL}/tests/assigned?_id=${testId ?? ""}`
+      `${API_BASE_URL}/tests/assigned${testId ? `?_id=${testId}` : ""}`
     );
 
     if (!response.ok) {
