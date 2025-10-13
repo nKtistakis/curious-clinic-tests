@@ -60,13 +60,13 @@ const TakeTest = () => {
       const testData = await apiClient.getAssignedTests(testId);
 
       if (testData) {
-        setAssignetTest(testData[0]);
-        setTest(testData[0].test);
+        setAssignetTest(testData);
+        setTest(testData.test);
 
         // Get test assignment ID from response
         setTestAssignmentId(testData._id);
 
-        if (testData[0].status.code === "INPROGRESS") {
+        if (testData.status.code === "INPROGRESS") {
           // Load answers from results.answers
           if (
             testData.results?.answers &&
@@ -74,7 +74,7 @@ const TakeTest = () => {
           ) {
             const answersMap: { [key: string]: string } = {};
             testData.results.answers.forEach((ans: any) => {
-              answersMap[ans.questionId] = ans.answer;
+              answersMap[ans.question] = ans.answer;
             });
             setAnswers(answersMap);
             toast.success("Continuing from saved progress");
@@ -99,8 +99,8 @@ const TakeTest = () => {
     if (testAssignmentId && !isSubmitting) {
       try {
         await apiClient.submitAnswer({
-          testAssignmentId,
-          questionId,
+          _id: testAssignmentId,
+          question: questionId,
           answer,
         });
       } catch (error) {
@@ -142,53 +142,11 @@ const TakeTest = () => {
 
     setIsSubmitting(true);
     try {
-      const timeTaken = Math.floor((Date.now() - stopwatchStart) / 1000);
-
-      // For now, navigate to review page
-      // In real implementation, check if manual scoring is needed
-      const needsManualScoring = test.questions.some(
-        (q) => q.category.code !== "MULTIPLE-CHOICE"
-      );
-
-      if (needsManualScoring) {
-        toast.success("Test completed! Waiting for doctor review.");
-        navigate("/dashboard");
-      } else {
-        // Auto-score and finish
-        const answersArray = test.questions.map((q) => ({
-          questionId: q._id,
-          answer: answers[q._id],
-        }));
-
-        let totalScore = 0;
-        let totalPoints = 0;
-
-        test.questions.forEach((q) => {
-          totalPoints += q.points;
-          if (
-            q.category.code === "MULTIPLE-CHOICE" &&
-            q.correctOption !== undefined
-          ) {
-            const answerIndex = parseInt(answers[q._id]);
-            if (answerIndex === q.correctOption) {
-              totalScore += q.points;
-            }
-          }
-        });
-
-        const percentage =
-          totalPoints > 0 ? Math.round((totalScore / totalPoints) * 100) : 0;
-
-        await apiClient.finishTest(testAssignmentId, {
-          score: totalScore,
-          totalQuestions: test.questions.length,
-          percentage,
-          answers: answersArray,
-        });
-
-        toast.success("Test completed and scored!");
-        navigate("/dashboard");
-      }
+      // Submit test to mark as completed (patient side)
+      await apiClient.submitTest(testAssignmentId);
+      
+      toast.success("Test submitted successfully! Waiting for doctor review.");
+      navigate("/dashboard");
     } catch (error) {
       console.error("Failed to submit test:", error);
       toast.error("Failed to submit test");
