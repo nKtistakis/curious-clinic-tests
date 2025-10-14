@@ -104,10 +104,9 @@ const CreateTest = () => {
     if (testId) {
       const loadTest = async () => {
         try {
-          const tests = await apiClient.getTests(testId);
+          const test = await apiClient.getTests(testId);
 
-          if (tests && tests.length > 0) {
-            const test = tests[0];
+          if (test) {
             setName(test.name);
             setQuestions(test.questions);
             setNotes(test.notes || "");
@@ -129,7 +128,7 @@ const CreateTest = () => {
     setQuestions([
       ...questions,
       {
-        _id: "1",
+        _id: (questions.length + 1).toString(),
         category: availableCategories[0],
         description: "",
         points: 1,
@@ -441,6 +440,7 @@ const CreateTest = () => {
                 <div className="flex justify-between items-center">
                   <CardTitle className="text-lg">
                     Question {qIndex + 1}
+                    {questions[0].toString()}
                   </CardTitle>
                   {questions.length > 1 && (
                     <Button

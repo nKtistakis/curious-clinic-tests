@@ -384,6 +384,17 @@ class ApiClient {
     }
   }
 
+  async submitTest(testAssignmentId: string): Promise<void> {
+    const response = await this.fetchWithAuth(`${API_BASE_URL}/tests/submit`, {
+      method: "POST",
+      body: JSON.stringify({ _id: testAssignmentId }),
+    });
+
+    if (!response.ok) {
+      throw new ApiError("Failed to submit test", response.status);
+    }
+  }
+
   async finishTest(
     testAssignmentId: string,
     data: {
