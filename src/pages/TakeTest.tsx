@@ -62,10 +62,13 @@ const TakeTest = () => {
       if (testData) {
         setAssignetTest(testData);
         setTest(testData.test);
+        setAssignetTest(testData);
+        setTest(testData.test);
 
         // Get test assignment ID from response
         setTestAssignmentId(testData._id);
 
+        if (testData.status.code === "INPROGRESS") {
         if (testData.status.code === "INPROGRESS") {
           // Load answers from results.answers
           if (
@@ -74,6 +77,7 @@ const TakeTest = () => {
           ) {
             const answersMap: { [key: string]: string } = {};
             testData.results.answers.forEach((ans: any) => {
+              answersMap[ans.question] = ans.answer;
               answersMap[ans.question] = ans.answer;
             });
             setAnswers(answersMap);
@@ -99,6 +103,8 @@ const TakeTest = () => {
     if (testAssignmentId && !isSubmitting) {
       try {
         await apiClient.submitAnswer({
+          _id: testAssignmentId,
+          question: questionId,
           _id: testAssignmentId,
           question: questionId,
           answer,
