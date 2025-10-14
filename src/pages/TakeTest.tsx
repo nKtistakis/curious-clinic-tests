@@ -62,13 +62,10 @@ const TakeTest = () => {
       if (testData) {
         setAssignetTest(testData);
         setTest(testData.test);
-        setAssignetTest(testData);
-        setTest(testData.test);
 
         // Get test assignment ID from response
         setTestAssignmentId(testData._id);
 
-        if (testData.status.code === "INPROGRESS") {
         if (testData.status.code === "INPROGRESS") {
           // Load answers from results.answers
           if (
@@ -77,7 +74,6 @@ const TakeTest = () => {
           ) {
             const answersMap: { [key: string]: string } = {};
             testData.results.answers.forEach((ans: any) => {
-              answersMap[ans.question] = ans.answer;
               answersMap[ans.question] = ans.answer;
             });
             setAnswers(answersMap);
@@ -95,28 +91,28 @@ const TakeTest = () => {
     }
   };
 
-  const handleAnswerChange = async (questionId: string, answer: string) => {
+  const handleAnswerChange = (questionId: string, answer: string) => {
     const newAnswers = { ...answers, [questionId]: answer };
     setAnswers(newAnswers);
+  };
 
-    // Submit answer to API immediately
-    if (testAssignmentId && !isSubmitting) {
-      try {
-        await apiClient.submitAnswer({
-          _id: testAssignmentId,
-          question: questionId,
-          _id: testAssignmentId,
-          question: questionId,
-          answer,
-        });
-      } catch (error) {
-        console.error("Failed to save answer:", error);
-        toast.error("Failed to save answer");
-      }
+  const submitCurrentAnswer = async (questionId: string) => {
+    const answer = answers[questionId];
+    if (!answer || !testAssignmentId || isSubmitting) return;
+
+    try {
+      await apiClient.submitAnswer({
+        _id: testAssignmentId,
+        question: questionId,
+        answer,
+      });
+    } catch (error) {
+      console.error("Failed to save answer:", error);
+      toast.error("Failed to save answer");
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!test) return;
     const currentQuestion = test.questions[currentQuestionIndex];
 
@@ -124,6 +120,9 @@ const TakeTest = () => {
       toast.error("Please provide an answer before proceeding");
       return;
     }
+
+    // Submit the current answer before moving to next
+    await submitCurrentAnswer(currentQuestion._id);
 
     if (currentQuestionIndex < test.questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
@@ -148,6 +147,10 @@ const TakeTest = () => {
 
     setIsSubmitting(true);
     try {
+      // Submit the last answer
+      const lastQuestion = test.questions[currentQuestionIndex];
+      await submitCurrentAnswer(lastQuestion._id);
+
       // Submit test to mark as completed (patient side)
       await apiClient.submitTest(testAssignmentId);
 

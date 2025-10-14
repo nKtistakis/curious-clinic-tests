@@ -10,15 +10,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ArrowLeft, UserCircle, Mail, Phone, MapPin, Building2 } from "lucide-react";
+import { ArrowLeft, UserCircle, Mail, Phone, MapPin, Building2, Users } from "lucide-react";
 import { toast } from "sonner";
 import type { Doctor, HealthStructure } from "@/types/models";
 
 const Profile = () => {
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const [profile, setProfile] = useState<Doctor | null>(null);
-  const [healthStructure, setHealthStructure] = useState<HealthStructure | null>(null);
+  const [profile, setProfile] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -26,7 +25,6 @@ const Profile = () => {
       try {
         const data = await apiClient.getDoctorInfo();
         setProfile(data);
-        setHealthStructure(data.healthStructure || null);
       } catch (error) {
         toast.error("Failed to fetch doctor information");
       } finally {
@@ -78,7 +76,7 @@ const Profile = () => {
                   <div>
                     <CardTitle className="text-2xl">{profile.name}</CardTitle>
                     <CardDescription className="text-lg">
-                      {profile.speciality}
+                      {profile.speciality || "Doctor"}
                     </CardDescription>
                   </div>
                 </div>
@@ -90,7 +88,7 @@ const Profile = () => {
                     <div>
                       <p className="text-sm font-medium">Email</p>
                       <p className="text-sm text-muted-foreground">
-                        {profile.contact.email}
+                        {profile.contact?.email}
                       </p>
                     </div>
                   </div>
@@ -99,7 +97,7 @@ const Profile = () => {
                     <div>
                       <p className="text-sm font-medium">Phone</p>
                       <p className="text-sm text-muted-foreground">
-                        {profile.contact.phone}
+                        {profile.contact?.phone}
                       </p>
                     </div>
                   </div>
@@ -108,35 +106,57 @@ const Profile = () => {
                     <div>
                       <p className="text-sm font-medium">Address</p>
                       <p className="text-sm text-muted-foreground">
-                        {profile.address.street} {profile.address.streetNumber},{" "}
-                        {profile.address.city}, {profile.address.country}{" "}
-                        {profile.address.zip}
+                        {profile.address?.street} {profile.address?.streetNumber},{" "}
+                        {profile.address?.city}, {profile.address?.country}{" "}
+                        {profile.address?.zip}
                       </p>
                     </div>
                   </div>
+                  {profile.patients && (
+                    <div className="flex items-start gap-3">
+                      <Users className="h-5 w-5 text-muted-foreground mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium">Total Patients</p>
+                        <p className="text-sm text-muted-foreground">
+                          {profile.patients.length}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {profile.createdAt && (
+                    <div className="flex items-start gap-3">
+                      <UserCircle className="h-5 w-5 text-muted-foreground mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium">Member Since</p>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(profile.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
 
-            {healthStructure && (
+            {profile.health_structure && (
               <Card className="shadow-md">
                 <CardHeader>
                   <div className="flex items-center gap-3">
                     <Building2 className="h-6 w-6 text-primary" />
-                    <CardTitle>Health Structure</CardTitle>
+                    <CardTitle>Health Facility</CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
                     <p className="text-sm font-medium">Facility Name</p>
-                    <p className="text-lg text-foreground">{healthStructure.name}</p>
+                    <p className="text-lg text-foreground">{profile.health_structure.name}</p>
                   </div>
                   <div className="flex items-start gap-3">
                     <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
                     <div>
                       <p className="text-sm font-medium">Email</p>
                       <p className="text-sm text-muted-foreground">
-                        {healthStructure.contact.email}
+                        {profile.health_structure.contact?.email}
                       </p>
                     </div>
                   </div>
@@ -145,7 +165,7 @@ const Profile = () => {
                     <div>
                       <p className="text-sm font-medium">Phone</p>
                       <p className="text-sm text-muted-foreground">
-                        {healthStructure.contact.phone}
+                        {profile.health_structure.contact?.phone}
                       </p>
                     </div>
                   </div>
@@ -154,9 +174,9 @@ const Profile = () => {
                     <div>
                       <p className="text-sm font-medium">Address</p>
                       <p className="text-sm text-muted-foreground">
-                        {healthStructure.address.street} {healthStructure.address.streetNumber},{" "}
-                        {healthStructure.address.city}, {healthStructure.address.country}{" "}
-                        {healthStructure.address.zip}
+                        {profile.health_structure.address?.street} {profile.health_structure.address?.streetNumber},{" "}
+                        {profile.health_structure.address?.city}, {profile.health_structure.address?.country}{" "}
+                        {profile.health_structure.address?.zip}
                       </p>
                     </div>
                   </div>

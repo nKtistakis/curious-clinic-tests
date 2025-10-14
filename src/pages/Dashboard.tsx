@@ -224,8 +224,10 @@ const Dashboard = () => {
                         {new Date(assignedTest.startDate).toLocaleDateString()}
                       </p>
                       <p>
-                        Until:{" "}
-                        {new Date(assignedTest.endDate).toLocaleDateString()}
+                        Valid Until:{" "}
+                        {assignedTest.endDate
+                          ? new Date(assignedTest.endDate).toLocaleDateString()
+                          : "No expiration"}
                       </p>
                       {assignedTest.results && (
                         <>

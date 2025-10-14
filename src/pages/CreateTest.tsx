@@ -104,9 +104,10 @@ const CreateTest = () => {
     if (testId) {
       const loadTest = async () => {
         try {
-          const test = await apiClient.getTests(testId);
+          const tests = await apiClient.getTests(testId);
 
-          if (test) {
+          if (tests && tests.length > 0) {
+            const test = tests[0];
             setName(test.name);
             setQuestions(test.questions);
             setNotes(test.notes || "");
@@ -543,59 +544,61 @@ const CreateTest = () => {
                   />
                 </div>
 
-                <div>
-                  <Label>Attached Files (Images/Audio)</Label>
-                  <div className="mt-2 space-y-2">
-                    <Input
-                      type="file"
-                      accept="image/*,audio/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const isImage = file.type.startsWith("image/");
-                          const isAudio = file.type.startsWith("audio/");
-                          if (isImage || isAudio) {
-                            handleFileUpload(
-                              question._id,
-                              file,
-                              isImage ? "image" : "audio"
-                            );
-                          } else {
-                            toast.error(
-                              "Only image and audio files are allowed"
-                            );
+                {question.category?.files !== false && (
+                  <div>
+                    <Label>Attached Files (Images/Audio)</Label>
+                    <div className="mt-2 space-y-2">
+                      <Input
+                        type="file"
+                        accept="image/*,audio/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const isImage = file.type.startsWith("image/");
+                            const isAudio = file.type.startsWith("audio/");
+                            if (isImage || isAudio) {
+                              handleFileUpload(
+                                question._id,
+                                file,
+                                isImage ? "image" : "audio"
+                              );
+                            } else {
+                              toast.error(
+                                "Only image and audio files are allowed"
+                              );
+                            }
                           }
-                        }
-                      }}
-                    />
-                    {question.attachedFiles &&
-                      question.attachedFiles.length > 0 && (
-                        <div className="space-y-1">
-                          {question.attachedFiles.map((file, idx) => (
-                            <div
-                              key={idx}
-                              className="flex items-center gap-2 text-sm bg-muted p-2 rounded"
-                            >
-                              {file.type.startsWith("image/") ? (
-                                <ImageIcon className="h-4 w-4" />
-                              ) : (
-                                <Volume2 className="h-4 w-4" />
-                              )}
-                              <span className="flex-1">{file.name}</span>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => removeFile(question._id, idx)}
+                        }}
+                      />
+                      {question.attachedFiles &&
+                        question.attachedFiles.length > 0 && (
+                          <div className="space-y-1">
+                            {question.attachedFiles.map((file, idx) => (
+                              <div
+                                key={idx}
+                                className="flex items-center gap-2 text-sm bg-muted p-2 rounded"
                               >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                                {file.type.startsWith("image/") ? (
+                                  <ImageIcon className="h-4 w-4" />
+                                ) : (
+                                  <Volume2 className="h-4 w-4" />
+                                )}
+                                <span className="flex-1">{file.name}</span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => removeFile(question._id, idx)}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {question.category?.code === "MULTIPLE-CHOICE" && (
                   <div className="space-y-3">
