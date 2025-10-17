@@ -398,11 +398,9 @@ class ApiClient {
   async finishTest(
     testAssignmentId: string,
     data: {
-      score: number;
-      totalQuestions: number;
-      percentage: number;
-      answers: any[];
+      scorePercent: number;
       notes?: string;
+      answers: any[];
     }
   ): Promise<any> {
     const response = await this.fetchWithAuth(`${API_BASE_URL}/tests/finish`, {

@@ -49,10 +49,18 @@ const ReviewTest = () => {
 
   const loadTestData = async () => {
     try {
-      // In real implementation, fetch test assignment with answers
-      // For now, this is placeholder
-      const testData = await apiClient.getTests(testAssignmentId);
+      const testData = await apiClient.getAssignedTests(testAssignmentId);
       setTest(testData);
+      
+      // Load answers from results if they exist
+      if (testData.results?.answers) {
+        setAnswers(testData.results.answers);
+      }
+      
+      // Load notes if they exist
+      if (testData.results?.notes) {
+        setNotes(testData.results.notes);
+      }
     } catch (error) {
       console.error("Failed to load test:", error);
       toast.error("Failed to load test data");
@@ -81,7 +89,7 @@ const ReviewTest = () => {
     let totalPoints = 0;
 
     const scoredAnswers = answers.map((answer) => {
-      const question = test.questions.find((q: Question) => q._id === answer.questionId);
+      const question = test.test.questions.find((q: Question) => q._id === answer.questionId);
       if (!question) return answer;
 
       totalPoints += question.points;
@@ -102,11 +110,9 @@ const ReviewTest = () => {
     setIsSubmitting(true);
     try {
       await apiClient.finishTest(testAssignmentId!, {
-        score: totalScore,
-        totalQuestions: test.questions.length,
-        percentage,
-        answers: scoredAnswers,
+        scorePercent: percentage,
         notes: notes.trim() || undefined,
+        answers: scoredAnswers,
       });
 
       toast.success("Test scored and submitted successfully!");
@@ -155,7 +161,7 @@ const ReviewTest = () => {
         </Card>
 
         <div className="space-y-6 mb-6">
-          {test.questions.map((question: Question, index: number) => {
+          {test.test.questions.map((question: Question, index: number) => {
             const answer = answers.find((a) => a.questionId === question._id);
             const autoScore = answer ? calculateAutoScore(question, answer) : null;
             const requiresManualScore = autoScore === null;

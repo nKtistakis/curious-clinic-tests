@@ -246,10 +246,25 @@ const Dashboard = () => {
                           )}
                         </>
                       )}
+                      
+                      {/* Show Review/Score button if completed but no results */}
+                      {assignedTest?.status?.code === "COMPLETED" && !assignedTest.results && (
+                        <Button
+                          variant="default"
+                          className="mt-4 w-full"
+                          onClick={() =>
+                            navigate(`/review-test/${assignedTest._id}`)
+                          }
+                        >
+                          Review/Score
+                        </Button>
+                      )}
+                      
+                      {/* Show Take Test button if not completed */}
                       {assignedTest?.status?.code !== "COMPLETED" && (
                         <Button
                           variant="secondary"
-                          className="mt-20 w-max px-[50px]"
+                          className="mt-4 w-full"
                           onClick={() =>
                             navigate(`/take-test/${assignedTest._id}`)
                           }
