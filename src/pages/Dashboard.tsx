@@ -247,9 +247,9 @@ const Dashboard = () => {
                         </>
                       )}
 
-                      {/* Show Review/Score button if completed but no results */}
+                      {/* Show Review/Score button if completed but no scorePercent */}
                       {assignedTest?.status?.code === "COMPLETED" &&
-                        !assignedTest.results.scorePercent && (
+                        !assignedTest.results?.scorePercent && (
                           <Button
                             variant="default"
                             className="mt-4 w-full"

@@ -54,9 +54,15 @@ const ReviewTest = () => {
       const testData = await apiClient.getAssignedTests(testAssignmentId);
       setTest(testData);
 
-      // Load answers from results if they exist
+      // Load answers from results if they exist - map to expected format
       if (testData.results?.answers) {
-        setAnswers(testData.results.answers);
+        const mappedAnswers = testData.results.answers.map((ans: any) => ({
+          questionId: ans.question, // API returns 'question', we need 'questionId'
+          answer: ans.answer,
+          isCorrect: ans.isCorrect,
+          score: ans.score,
+        }));
+        setAnswers(mappedAnswers);
       }
 
       // Load notes if they exist
@@ -89,6 +95,19 @@ const ReviewTest = () => {
   const handleSubmit = async () => {
     if (!test) return;
 
+    // Validate all manual scores are provided
+    const missingScores = test.test.questions.filter((q: Question) => {
+      const answer = answers.find((a) => a.questionId === q._id);
+      if (!answer) return false;
+      const autoScore = calculateAutoScore(q, answer);
+      return autoScore === null && !manualScores[q._id] && manualScores[q._id] !== 0;
+    });
+
+    if (missingScores.length > 0) {
+      toast.error("Please provide manual scores for all required questions");
+      return;
+    }
+
     // Calculate final score
     let totalScore = 0;
     let totalPoints = 0;
@@ -103,12 +122,13 @@ const ReviewTest = () => {
 
       const autoScore = calculateAutoScore(question, answer);
       const finalScore =
-        autoScore !== null ? autoScore : manualScores[answer.questionId] || 0;
+        autoScore !== null ? autoScore : (manualScores[answer.questionId] || 0);
 
       totalScore += finalScore;
 
       return {
-        ...answer,
+        question: answer.questionId, // API expects 'question' not 'questionId'
+        answer: answer.answer,
         score: finalScore,
       };
     });

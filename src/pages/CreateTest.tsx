@@ -104,7 +104,8 @@ const CreateTest = () => {
     if (testId) {
       const loadTest = async () => {
         try {
-          const test = await apiClient.getTests(testId);
+          const tests = await apiClient.getTests(testId);
+          const test = Array.isArray(tests) ? tests[0] : tests;
 
           if (test) {
             setName(test.name);
