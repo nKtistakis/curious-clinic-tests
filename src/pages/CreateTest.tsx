@@ -104,10 +104,9 @@ const CreateTest = () => {
     if (testId) {
       const loadTest = async () => {
         try {
-          const tests = await apiClient.getTests(testId);
+          const test = await apiClient.getTests(testId);
 
-          if (tests && tests.length > 0) {
-            const test = tests[0];
+          if (test) {
             setName(test.name);
             setQuestions(test.questions);
             setNotes(test.notes || "");

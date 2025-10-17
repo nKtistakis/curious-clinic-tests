@@ -395,17 +395,15 @@ class ApiClient {
     }
   }
 
-  async finishTest(
-    testAssignmentId: string,
-    data: {
-      scorePercent: number;
-      notes?: string;
-      answers: any[];
-    }
-  ): Promise<any> {
-    const response = await this.fetchWithAuth(`${API_BASE_URL}/tests/finish`, {
+  async scoreTest(data: {
+    _id: string;
+    scorePercent: number;
+    notes?: string;
+    answers: any[];
+  }): Promise<any> {
+    const response = await this.fetchWithAuth(`${API_BASE_URL}/tests/score`, {
       method: "POST",
-      body: JSON.stringify({ testAssignmentId, ...data }),
+      body: JSON.stringify(data),
     });
 
     if (!response.ok) {

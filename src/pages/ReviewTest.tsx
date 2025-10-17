@@ -39,7 +39,9 @@ const ReviewTest = () => {
   const navigate = useNavigate();
   const [test, setTest] = useState<any>(null);
   const [answers, setAnswers] = useState<Answer[]>([]);
-  const [manualScores, setManualScores] = useState<{ [key: string]: number }>({});
+  const [manualScores, setManualScores] = useState<{ [key: string]: number }>(
+    {}
+  );
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -51,12 +53,12 @@ const ReviewTest = () => {
     try {
       const testData = await apiClient.getAssignedTests(testAssignmentId);
       setTest(testData);
-      
+
       // Load answers from results if they exist
       if (testData.results?.answers) {
         setAnswers(testData.results.answers);
       }
-      
+
       // Load notes if they exist
       if (testData.results?.notes) {
         setNotes(testData.results.notes);
@@ -67,7 +69,10 @@ const ReviewTest = () => {
     }
   };
 
-  const calculateAutoScore = (question: Question, answer: Answer): number | null => {
+  const calculateAutoScore = (
+    question: Question,
+    answer: Answer
+  ): number | null => {
     if (question.category.code === "MULTIPLE-CHOICE") {
       if (question.options && question.correctOption !== undefined) {
         const answerIndex = parseInt(answer.answer);
@@ -89,14 +94,17 @@ const ReviewTest = () => {
     let totalPoints = 0;
 
     const scoredAnswers = answers.map((answer) => {
-      const question = test.test.questions.find((q: Question) => q._id === answer.questionId);
+      const question = test.test.questions.find(
+        (q: Question) => q._id === answer.questionId
+      );
       if (!question) return answer;
 
       totalPoints += question.points;
 
       const autoScore = calculateAutoScore(question, answer);
-      const finalScore = autoScore !== null ? autoScore : (manualScores[answer.questionId] || 0);
-      
+      const finalScore =
+        autoScore !== null ? autoScore : manualScores[answer.questionId] || 0;
+
       totalScore += finalScore;
 
       return {
@@ -105,11 +113,13 @@ const ReviewTest = () => {
       };
     });
 
-    const percentage = totalPoints > 0 ? Math.round((totalScore / totalPoints) * 100) : 0;
+    const percentage =
+      totalPoints > 0 ? Math.round((totalScore / totalPoints) * 100) : 0;
 
     setIsSubmitting(true);
     try {
-      await apiClient.finishTest(testAssignmentId!, {
+      await apiClient.scoreTest({
+        _id: testAssignmentId!,
         scorePercent: percentage,
         notes: notes.trim() || undefined,
         answers: scoredAnswers,
@@ -145,7 +155,9 @@ const ReviewTest = () => {
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-xl font-bold text-foreground">Review & Score Test</h1>
+            <h1 className="text-xl font-bold text-foreground">
+              Review & Score Test
+            </h1>
           </div>
         </div>
       </nav>
@@ -155,7 +167,8 @@ const ReviewTest = () => {
           <CardHeader>
             <CardTitle>Test Results</CardTitle>
             <CardDescription>
-              Review answers and provide manual scores for questions that require it
+              Review answers and provide manual scores for questions that
+              require it
             </CardDescription>
           </CardHeader>
         </Card>
@@ -163,7 +176,9 @@ const ReviewTest = () => {
         <div className="space-y-6 mb-6">
           {test.test.questions.map((question: Question, index: number) => {
             const answer = answers.find((a) => a.questionId === question._id);
-            const autoScore = answer ? calculateAutoScore(question, answer) : null;
+            const autoScore = answer
+              ? calculateAutoScore(question, answer)
+              : null;
             const requiresManualScore = autoScore === null;
 
             return (
@@ -182,14 +197,15 @@ const ReviewTest = () => {
                     </p>
                   </div>
 
-                  {question.category.code === "MULTIPLE-CHOICE" && question.options && (
-                    <div>
-                      <Label>Correct Answer:</Label>
-                      <p className="mt-1 p-3 bg-success/10 text-success rounded-md">
-                        {question.options[question.correctOption || 0]}
-                      </p>
-                    </div>
-                  )}
+                  {question.category.code === "MULTIPLE-CHOICE" &&
+                    question.options && (
+                      <div>
+                        <Label>Correct Answer:</Label>
+                        <p className="mt-1 p-3 bg-success/10 text-success rounded-md">
+                          {question.options[question.correctOption || 0]}
+                        </p>
+                      </div>
+                    )}
 
                   <div className="flex items-center gap-4">
                     <div>
@@ -221,7 +237,9 @@ const ReviewTest = () => {
                     ) : (
                       <div>
                         <Label>Auto Score:</Label>
-                        <p className="font-semibold text-primary">{autoScore}</p>
+                        <p className="font-semibold text-primary">
+                          {autoScore}
+                        </p>
                       </div>
                     )}
                   </div>
