@@ -13,20 +13,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  ArrowLeft,
-  PlusCircle,
-  Trash2,
-  Save,
-  Minus,
-  Upload,
-  X,
-  FileText,
-  ImageIcon,
-  Volume2,
-} from "lucide-react";
+import { ArrowLeft, PlusCircle, Trash2, Save } from "lucide-react";
 import { toast } from "sonner";
 import type { QuestionCategory } from "@/types/models";
+import { MultipleChoiceQuestion } from "@/components/questions/MultipleChoiceQuestion";
+import { EssayQuestion } from "@/components/questions/EssayQuestion";
+import { MemoryPairQuestion } from "@/components/questions/MemoryPairQuestion";
+import { AudioMemoryQuestion } from "@/components/questions/AudioMemoryQuestion";
+import { ImageDescriptionQuestion } from "@/components/questions/ImageDescriptionQuestion";
+import { QuestionAttachments } from "@/components/questions/QuestionAttachments";
 
 interface Question {
   _id: string;
@@ -545,272 +540,54 @@ const CreateTest = () => {
                 </div>
 
                 {question.category?.files !== false && (
-                  <div>
-                    <Label>Attached Files (Images/Audio)</Label>
-                    <div className="mt-2 space-y-2">
-                      <Input
-                        type="file"
-                        accept="image/*,audio/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            const isImage = file.type.startsWith("image/");
-                            const isAudio = file.type.startsWith("audio/");
-                            if (isImage || isAudio) {
-                              handleFileUpload(
-                                question._id,
-                                file,
-                                isImage ? "image" : "audio"
-                              );
-                            } else {
-                              toast.error(
-                                "Only image and audio files are allowed"
-                              );
-                            }
-                          }
-                        }}
-                      />
-                      {question.attachedFiles &&
-                        question.attachedFiles.length > 0 && (
-                          <div className="space-y-1">
-                            {question.attachedFiles.map((file, idx) => (
-                              <div
-                                key={idx}
-                                className="flex items-center gap-2 text-sm bg-muted p-2 rounded"
-                              >
-                                {file.type.startsWith("image/") ? (
-                                  <ImageIcon className="h-4 w-4" />
-                                ) : (
-                                  <Volume2 className="h-4 w-4" />
-                                )}
-                                <span className="flex-1">{file.name}</span>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => removeFile(question._id, idx)}
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                    </div>
-                  </div>
+                  <QuestionAttachments
+                    questionId={question._id}
+                    attachedFiles={question.attachedFiles}
+                    onFileUpload={handleFileUpload}
+                    onRemoveFile={removeFile}
+                  />
                 )}
 
                 {question.category?.code === "MULTIPLE-CHOICE" && (
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <Label>Answer Options</Label>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => addOption(question._id)}
-                        className="gap-1"
-                      >
-                        <PlusCircle className="h-4 w-4" />
-                        Add Option
-                      </Button>
-                    </div>
-                    {question.options?.map((option, optIndex) => (
-                      <div key={optIndex} className="flex gap-2 items-center">
-                        <Input
-                          placeholder={`Option ${optIndex + 1}`}
-                          value={option}
-                          onChange={(e) =>
-                            updateOption(question._id, optIndex, e.target.value)
-                          }
-                          className="flex-1"
-                        />
-                        <Button
-                          type="button"
-                          variant={
-                            question.correctOption === optIndex
-                              ? "default"
-                              : "outline"
-                          }
-                          size="sm"
-                          onClick={() =>
-                            updateQuestion(
-                              question._id,
-                              "correctOption",
-                              optIndex
-                            )
-                          }
-                          className="whitespace-nowrap"
-                        >
-                          {question.correctOption === optIndex
-                            ? "Correct"
-                            : "Mark Correct"}
-                        </Button>
-                        {question.options && question.options.length > 2 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeOption(question._id, optIndex)}
-                            className="text-muted-foreground hover:text-destructive"
-                          >
-                            <Minus className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                  <MultipleChoiceQuestion
+                    questionId={question._id}
+                    options={question.options || []}
+                    correctOption={question.correctOption || 0}
+                    onUpdateOption={updateOption}
+                    onAddOption={addOption}
+                    onRemoveOption={removeOption}
+                    onUpdateCorrectOption={updateQuestion}
+                  />
                 )}
 
-                {question.category?.code === "ESSAY" && (
-                  <div className="p-4 bg-muted rounded-md">
-                    <p className="text-sm text-muted-foreground">
-                      Students will be able to write a text response to this
-                      question. You can review and score their answers manually.
-                    </p>
-                  </div>
-                )}
+                {question.category?.code === "ESSAY" && <EssayQuestion />}
 
                 {question.category?.code === "MEMORY-PAIRS" && (
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <Label>Word Pairs (Students will match these)</Label>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => addMemoryPair(question._id)}
-                        className="gap-1"
-                      >
-                        <PlusCircle className="h-4 w-4" />
-                        Add Pair
-                      </Button>
-                    </div>
-                    {question.pairs?.map((pair, pairIndex) => (
-                      <div key={pair.id} className="flex gap-2 items-center">
-                        <Input
-                          placeholder={`Word ${pairIndex * 2 + 1}`}
-                          value={pair.word1}
-                          onChange={(e) =>
-                            updateMemoryPair(
-                              question._id,
-                              pair.id,
-                              "word1",
-                              e.target.value
-                            )
-                          }
-                          className="flex-1"
-                        />
-                        <span className="text-muted-foreground">↔</span>
-                        <Input
-                          placeholder={`Word ${pairIndex * 2 + 2}`}
-                          value={pair.word2}
-                          onChange={(e) =>
-                            updateMemoryPair(
-                              question._id,
-                              pair.id,
-                              "word2",
-                              e.target.value
-                            )
-                          }
-                          className="flex-1"
-                        />
-                        {question.pairs && question.pairs.length > 1 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() =>
-                              removeMemoryPair(question._id, pair.id)
-                            }
-                            className="text-muted-foreground hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                  <MemoryPairQuestion
+                    questionId={question._id}
+                    pairs={question.pairs || []}
+                    onAddPair={addMemoryPair}
+                    onUpdatePair={updateMemoryPair}
+                    onRemovePair={removeMemoryPair}
+                  />
                 )}
 
                 {question.category?.code === "AUDIO-MEMORY" && (
-                  <div className="space-y-2">
-                    <Label>Audio File (Required)</Label>
-                    <Input
-                      type="file"
-                      accept="audio/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file && file.type.startsWith("audio/")) {
-                          handleAudioUpload(question._id, file);
-                        } else {
-                          toast.error("Please select an audio file");
-                        }
-                      }}
-                    />
-                    {question.audioFile && (
-                      <div className="flex items-center gap-2 text-sm bg-muted p-2 rounded">
-                        <Volume2 className="h-4 w-4" />
-                        <span className="flex-1">
-                          {question.audioFile.name}
-                        </span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() =>
-                            updateQuestion(question._id, "audioFile", undefined)
-                          }
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
-                    <p className="text-sm text-muted-foreground">
-                      Students will listen to the audio and answer based on what
-                      they hear.
-                    </p>
-                  </div>
+                  <AudioMemoryQuestion
+                    questionId={question._id}
+                    audioFile={question.audioFile}
+                    onAudioUpload={handleAudioUpload}
+                    onRemoveAudio={updateQuestion}
+                  />
                 )}
 
                 {question.category?.code === "IMAGE-DESCRIPTION" && (
-                  <div className="space-y-2">
-                    <Label>Image File (Required)</Label>
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file && file.type.startsWith("image/")) {
-                          handleImageUpload(question._id, file);
-                        } else {
-                          toast.error("Please select an image file");
-                        }
-                      }}
-                    />
-                    {question.imageFile && (
-                      <div className="flex items-center gap-2 text-sm bg-muted p-2 rounded">
-                        <ImageIcon className="h-4 w-4" />
-                        <span className="flex-1">
-                          {question.imageFile.name}
-                        </span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() =>
-                            updateQuestion(question._id, "imageFile", undefined)
-                          }
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
-                    <p className="text-sm text-muted-foreground">
-                      ⚠️ This question requires manual scoring by the
-                      teacher/doctor.
-                    </p>
-                  </div>
+                  <ImageDescriptionQuestion
+                    questionId={question._id}
+                    imageFile={question.imageFile}
+                    onImageUpload={handleImageUpload}
+                    onRemoveImage={updateQuestion}
+                  />
                 )}
               </CardContent>
             </Card>
