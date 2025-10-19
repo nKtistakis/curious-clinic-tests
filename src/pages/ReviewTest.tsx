@@ -259,7 +259,7 @@ const ReviewTest = () => {
                           type="number"
                           min="0"
                           max={question.points}
-                          value={manualScores[question._id] || ""}
+                          value={manualScores[question._id] !== undefined ? manualScores[question._id] : ""}
                           onChange={(e) =>
                             handleManualScoreChange(
                               question._id,
