@@ -18,6 +18,7 @@ import { toast } from "sonner";
 interface Answer {
   questionId: string;
   answer: string;
+  displayAnswer?: string;
   isCorrect?: boolean;
   score?: number;
 }
@@ -56,12 +57,26 @@ const ReviewTest = () => {
 
       // Load answers from results if they exist - map to expected format
       if (testData.results?.answers) {
-        const mappedAnswers = testData.results.answers.map((ans: any) => ({
-          questionId: ans.question, // API returns 'question', we need 'questionId'
-          answer: ans.answer,
-          isCorrect: ans.isCorrect,
-          score: ans.score,
-        }));
+        const mappedAnswers = testData.results.answers.map((ans: any) => {
+          const question = testData.test.questions.find((q: any) => q._id === ans.question);
+          let displayAnswer = ans.answer;
+          
+          // For multiple choice, convert index to actual option text
+          if (question?.category?.code === "MULTIPLE-CHOICE" && question.options) {
+            const answerIndex = parseInt(ans.answer);
+            if (!isNaN(answerIndex) && question.options[answerIndex]) {
+              displayAnswer = question.options[answerIndex];
+            }
+          }
+          
+          return {
+            questionId: ans.question,
+            answer: ans.answer,
+            displayAnswer: displayAnswer,
+            isCorrect: ans.isCorrect,
+            score: ans.score,
+          };
+        });
         setAnswers(mappedAnswers);
       }
 
@@ -88,8 +103,9 @@ const ReviewTest = () => {
     return null;
   };
 
-  const handleManualScoreChange = (questionId: string, score: number) => {
-    setManualScores({ ...manualScores, [questionId]: score });
+  const handleManualScoreChange = (questionId: string, score: number, maxPoints: number) => {
+    const cappedScore = Math.min(Math.max(0, score), maxPoints);
+    setManualScores({ ...manualScores, [questionId]: cappedScore });
   };
 
   const handleSubmit = async () => {
@@ -213,7 +229,7 @@ const ReviewTest = () => {
                   <div>
                     <Label>Patient's Answer:</Label>
                     <p className="mt-1 p-3 bg-muted rounded-md">
-                      {answer?.answer || "No answer provided"}
+                      {answer?.displayAnswer || answer?.answer || "No answer provided"}
                     </p>
                   </div>
 
@@ -247,7 +263,8 @@ const ReviewTest = () => {
                           onChange={(e) =>
                             handleManualScoreChange(
                               question._id,
-                              parseFloat(e.target.value) || 0
+                              parseFloat(e.target.value) || 0,
+                              question.points
                             )
                           }
                           className="mt-1"
