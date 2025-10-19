@@ -26,6 +26,7 @@ interface AssignTestDialogProps {
   onOpenChange: (open: boolean) => void;
   testId: string;
   testName: string;
+  onAssigned?: () => void;
 }
 
 export function AssignTestDialog({
@@ -33,6 +34,7 @@ export function AssignTestDialog({
   onOpenChange,
   testId,
   testName,
+  onAssigned,
 }: AssignTestDialogProps) {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string>("");
@@ -85,6 +87,11 @@ export function AssignTestDialog({
       setValidDays(7);
       setTimerType("none");
       setTimerValue(3600);
+      
+      // Notify parent to refresh assigned tests
+      if (onAssigned) {
+        onAssigned();
+      }
     } catch (error) {
       console.error("Failed to assign test:", error);
       toast.error("Failed to assign test");

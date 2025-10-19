@@ -70,27 +70,27 @@ const Dashboard = () => {
     name: string;
   } | null>(null);
 
-  useEffect(() => {
-    const fetchTests = async () => {
-      try {
-        const fetchedTests = await apiClient.getTests();
-        setTests(fetchedTests);
+  const fetchTests = async () => {
+    try {
+      const fetchedTests = await apiClient.getTests();
+      setTests(fetchedTests);
 
-        // Fetch assigned tests
-        const assigned = await apiClient.getAssignedTests();
-        setAssignedTests(Array.isArray(assigned) ? assigned : [assigned]);
-      } catch (error) {
-        // Fallback to localStorage for now
-        const storedTests = localStorage.getItem("tests");
-        if (storedTests) {
-          setTests(JSON.parse(storedTests));
-        }
-        console.error("Failed to fetch tests from server", error);
-      } finally {
-        setIsLoading(false);
+      // Fetch assigned tests
+      const assigned = await apiClient.getAssignedTests();
+      setAssignedTests(Array.isArray(assigned) ? assigned : [assigned]);
+    } catch (error) {
+      // Fallback to localStorage for now
+      const storedTests = localStorage.getItem("tests");
+      if (storedTests) {
+        setTests(JSON.parse(storedTests));
       }
-    };
+      console.error("Failed to fetch tests from server", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchTests();
   }, []);
 
@@ -249,7 +249,7 @@ const Dashboard = () => {
 
                       {/* Show Review/Score button if completed but no scorePercent */}
                       {assignedTest?.status?.code === "COMPLETED" &&
-                        !assignedTest.results?.scorePercent && (
+                        (!assignedTest.results?.scorePercent && assignedTest.results?.scorePercent !== 0) && (
                           <Button
                             variant="default"
                             className="mt-4 w-full"
@@ -396,6 +396,7 @@ const Dashboard = () => {
             onOpenChange={setAssignDialogOpen}
             testId={selectedTest.id}
             testName={selectedTest.name}
+            onAssigned={fetchTests}
           />
         )}
       </main>
